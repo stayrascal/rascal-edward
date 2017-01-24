@@ -28,9 +28,13 @@ class PointMass(distribution.Distribution):
                     allow_nan_stats=allow_nan_stats,
                     name=ns
                 )
-    
+
     @staticmethod
     def _param_shapes(sample_shape):
+        return {"params": tf.expand_dims(ops.convert_to_tensor(sample_shape, dtype=dtypes.int32), 0)}
+
+    @property
+    def params(self):
         """distribution parameter."""
         return self._params
 
@@ -42,3 +46,19 @@ class PointMass(distribution.Distribution):
 
     def _event_shape(self):
         return array_ops.shape(self._params)
+
+    def _get_event_shape(self):
+        return self._params.get_shape()
+
+    def _mean(self):
+        return self._params
+
+    def _std(self):
+        return 0.0 * array_ops.ones_like(self._params)
+
+    def _variance(self):
+        return math_ops.square(self.std())
+
+    def _sample_n(self, n, seed=None):
+        multiples = tf.concat(0, [tf.expand_dims(n, 0), [1] * len(self.get_event_shape())])
+        return tile(self._params, multiples)
