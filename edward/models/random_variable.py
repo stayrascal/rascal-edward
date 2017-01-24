@@ -59,4 +59,67 @@ class RandomVariable(object):
 
         if value is not None:
             t_value = tf.convert_to_tensor(value, self.dtype)
-            expected_shape=(self.get_batch_shape().as_list()
+            expected_shape=(self.get_batch_shape().as_list() + 
+                            self.get_event_shape().as_list())
+            value_shape = t_value.get_shape().as_list()
+            if value_shape != expected_shape:
+                raise ValueError("Incompatible shape for initialization argument 'value'."
+                                "Expected %s, got %s." % (expected_shape, value_shape))
+            else:
+                self_value = t_value
+        else:
+            self._value = self.sample()
+
+    def __str__(self):
+        return '<ed.RandomVariable \'' + self.name.__str__() + '\' ' + \
+           'shape=' + self._value.get_shape().__str__() + ' ' \
+           'dtype=' + self.dtype.__repr__() + \
+           '>'
+    
+    def __repr__(self):
+        return self.__str__()
+    
+    def value(self):
+        """Get tensor that the random variable corresponds to."""
+        return self._value
+
+    def get_ancestors(self, collection=None):
+        """Get ancestors random variables"""
+        from edward.util.random_variables import get_ancestors
+        return get_ancestors(self, collection)
+
+    def get_children(self, collection=None):
+        """Get child random variables"""
+        from edward.util.random_variables import get_children
+        return get_children(self, collection)
+
+    def get_descendants(self, collection=None):
+        """Get descendant random varoables"""
+        from edward.util.random_variables import get_descendants
+        return get_descendants(self, collection)
+    
+    def get_parents(self, collection=None):
+        """Get parent random variables."""
+        from edward.util.random_variables import get_parents
+        return get_parents(self, collection)
+
+    def get_siblings(self, collection=None):
+        """Get sibling random variables."""
+        from edward.util.random_variables import get_siblings
+        return get_siblings(self, collection)
+
+    def get_variables(self, collection=None):
+        """Get TensorFlow variables that the random variable depends on."""
+        from edward.util.random_variables import get_variables
+        return get_variables(self, collection)
+    
+    def _tensor_conversion_function(v, dtype=None, name=None, as_ref=False):
+        _ = name
+        if dtype and not dtype.is_compatible_with(v.dtype):
+            raise ValueError("Incompatible type conversion requested to type '%s' for variable "
+          "of type '%s'" % (dtype.name, v.dtype.name))
+        if as_ref:
+            raise ValueError("%s: Ref type is not supported." % v)
+        return v.value
+
+tf.register_tensor_conversion_function(RandomVariable, RandomVariable._tensor_conversion_function)
